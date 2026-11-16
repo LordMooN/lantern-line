@@ -1,0 +1,6 @@
+[
+  { "name": "1-title.jpg", "query": "?shot=title" },
+  { "name": "2-flight.jpg", "query": "?shot=flight" },
+  { "name": "3-adrift.jpg", "query": "?shot=adrift" },
+  { "name": "4-harbour.jpg", "query": "?shot=harbour" }
+]
