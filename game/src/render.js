@@ -244,23 +244,48 @@ function drawPost(ctx, post, state, time) {
   ctx.restore();
 }
 
-/** The silk trail: a tapering line of warm light that fades out behind the lantern. */
+/** The silk trail: a soft ribbon of warm light that thins and fades behind the lantern. It is drawn
+ * as three passes over one path — a wide glow, a body and a bright core — so the line reads as a
+ * ribbon of silk rather than a stack of separate segments. */
 function drawTrail(ctx, trail, time) {
   if (trail.length < 2) return;
+
+  const live = trail.filter((point) => time - point.t < TUNING.trailSeconds);
+  if (live.length < 2) return;
+
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (let index = 1; index < trail.length; index += 1) {
-    const previous = trail[index - 1];
-    const point = trail[index];
-    const age = time - point.t;
-    const fresh = Math.max(0, 1 - age / TUNING.trailSeconds);
-    if (fresh <= 0.02) continue;
-    ctx.strokeStyle = `rgba(255, ${Math.round(170 + 60 * fresh)}, ${Math.round(90 + 80 * fresh)}, ${0.34 * fresh})`;
-    ctx.lineWidth = 0.6 + 4.4 * fresh;
-    ctx.beginPath();
-    ctx.moveTo(previous.x, previous.y);
-    ctx.lineTo(point.x, point.y);
-    ctx.stroke();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const passes = [
+    { width: 20, alpha: 0.05 },
+    { width: 9, alpha: 0.11 },
+    { width: 3.4, alpha: 0.26 },
+    { width: 1.2, alpha: 0.5 },
+  ];
+
+  for (let pass = 0; pass < passes.length; pass += 1) {
+    const style = passes[pass];
+    ctx.lineWidth = style.width;
+    // One continuous stroke through every sample, so the joins never show as separate sticks.
+
+    for (let index = 1; index < live.length; index += 1) {
+      const previous = live[index - 1];
+      const point = live[index];
+      const age = (time - point.t) / TUNING.trailSeconds;
+      const fresh = Math.max(0, 1 - age);
+      if (fresh <= 0.03) continue;
+      // The ribbon thins as it cools: a long trail tapers instead of ending in a blunt stub.
+      const taper = 0.35 + 0.65 * fresh;
+      ctx.lineWidth = style.width * taper;
+      ctx.strokeStyle = `rgba(255, ${Math.round(176 + 62 * fresh)}, ${Math.round(104 + 78 * fresh)}, ${style.alpha * fresh})`;
+      ctx.beginPath();
+      ctx.moveTo(previous.x, previous.y);
+      ctx.lineTo(point.x, point.y);
+      ctx.stroke();
+    }
+
   }
   ctx.restore();
 }
